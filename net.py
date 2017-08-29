@@ -71,7 +71,7 @@ class Nanonet(object):
         for n in self.topo.nodes:
             host_cmd.append('ip netns add %s' % n.name)
             node_cmd[n] = []
-            node_cmd[n].append('ifconfig lo up')
+            node_cmd[n].append('ip link set lo up')
             node_cmd[n].append('ip -6 ad ad %s dev lo' % n.addr)
             node_cmd[n].append('sysctl net.ipv6.conf.all.forwarding=1')
             node_cmd[n].append('sysctl net.ipv6.conf.all.seg6_enabled=1')
@@ -83,9 +83,11 @@ class Nanonet(object):
             host_cmd.append('ip link add name %s type veth peer name %s' % (dev1, dev2))
             host_cmd.append('ip link set %s netns %s' % (dev1, e.node1.name))
             host_cmd.append('ip link set %s netns %s' % (dev2, e.node2.name))
-            node_cmd[e.node1].append('ifconfig %s add %s up' % (dev1, e.node1.intfs_addr[e.port1]))
+            node_cmd[e.node1].append('ip addr add %s dev %s' % (e.node1.intfs_addr[e.port1], dev1))
+            node_cmd[e.node1].append('ip link set %s up' % (dev1))
             node_cmd[e.node1].append('sysctl net.ipv6.conf.%s.seg6_enabled=1' % (dev1))
-            node_cmd[e.node2].append('ifconfig %s add %s up' % (dev2, e.node2.intfs_addr[e.port2]))
+            node_cmd[e.node2].append('ip addr add %s dev %s' % (e.node2.intfs_addr[e.port2], dev2))
+            node_cmd[e.node2].append('ip link set %s up' % (dev2))
             node_cmd[e.node2].append('sysctl net.ipv6.conf.%s.seg6_enabled=1' % (dev2))
             if e.delay > 0 and e.bw == 0:
                 node_cmd[e.node1].append('tc qdisc add dev %s root handle 1: netem delay %.2fms' % (dev1, e.delay))
@@ -164,8 +166,8 @@ class Nanonet(object):
         S.add(n2)
 
         # shut down interfaces
-        self.call('ip netns exec %s ifconfig %s-%d down' % (n1.name, n1.name, edge.port1))
-        self.call('ip netns exec %s ifconfig %s-%d down' % (n2.name, n2.name, edge.port2))
+        self.call('ip netns exec %s ip link set %s-%d down' % (n1.name, n1.name, edge.port1))
+        self.call('ip netns exec %s ip link set %s-%d down' % (n2.name, n2.name, edge.port2))
 
         while len(Q) > 0:
             S2 = set()
