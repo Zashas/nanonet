@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys, os
 from node import *
@@ -8,27 +8,29 @@ from net import *
 # custom exec inspired by mininet
 
 def usage():
-	print 'Usage: %s topofile.py toponame [outdir]' % (sys.argv[0])
-	sys.exit(-1)
+    print('Usage: %s topofile.py toponame [outdir]' % (sys.argv[0]))
+    sys.exit(-1)
 
 if len(sys.argv) < 3 or len(sys.argv) > 4:
-	usage()
+    usage()
 
 outdir='.'
 if len(sys.argv) == 4:
-	outdir = sys.argv[3]
+    outdir = sys.argv[3]
 
 topos = {}
 
 sys.path.append('.')
 
 customs = {}
-execfile(sys.argv[1], customs, customs)
-for name, val in customs.iteritems():
-	if name == 'topos':
-		globals()['topos'].update(val)
-	else:
-		globals()[name] = val
+with open(sys.argv[1]) as source_file:
+    exec(source_file.read(), customs, customs)
+
+for name, val in customs.items():
+    if name == 'topos':
+        globals()['topos'].update(val)
+    else:
+        globals()[name] = val
 
 topo = topos[sys.argv[2]]()
 
@@ -40,7 +42,7 @@ net.start()
 f = open(sys.argv[2]+'.topo.sh', 'w')
 
 for n in net.topo.nodes:
-	f.write('# %s loop: %s\n' % (n.name, n.addr))
+    f.write('# %s loop: %s\n' % (n.name, n.addr))
 f.write('\n')
 
 net.dump_commands(lambda x: f.write('%s\n' % x), noroute=False)
